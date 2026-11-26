@@ -227,8 +227,7 @@ def diet_plan(request):
     try:
         if api_key:
             genai.configure(api_key=api_key)
-        # Updated to Gemini 3 Flash
-        model = genai.GenerativeModel('gemini-3.8-flash-preview')
+        model = genai.GenerativeModel('gemini-3.8-flash')
         prompt = f"Create a daily diet plan for BMI: {bmi:.1f}, BMR: {bmr:.0f}, Goal: {target}. Format: BREAKFAST, LUNCH, DINNER with emojis."
         response = model.generate_content(prompt)
         ai_diet = response.text
