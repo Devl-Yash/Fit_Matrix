@@ -157,14 +157,19 @@ def add_food(request):
                 raise ValueError("EXTERNAL_API_KEY is not set.")
 
             genai.configure(api_key=api_key)
-            model = genai.GenerativeModel('gemini-3-flash-preview')
+            model = genai.GenerativeModel('gemini-2.5-flash')
             img = Image.open(image_file)
+            img.thumbnail((800, 800))
+            if img.mode not in ("RGB", "L"):
+                img = img.convert("RGB")
 
             # Strict Macro Prompt
             prompt = "Identify this food. Return ONLY in this format: 'Name | Calories | Protein_g | Carbs_g | Fats_g'. Example: 'Chicken Salad | 350 | 30 | 10 | 15'"
             
-            response = model.generate_content([prompt, img])
+            print("DEBUG: calling Gemini API...")
+            response = model.generate_content([prompt, img], request_options={"timeout": 25})
             ai_text = (response.text or "").strip()
+            print("DEBUG: Gemini responded:", ai_text)
 
             # Parsing the data
             parts = ai_text.split('|')
