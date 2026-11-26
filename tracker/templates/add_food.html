@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fit_Matrix | AI Food Detection</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
+    
+    <style>
+        body { 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            background: #050505; 
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* DYNAMIC BACKGROUND */
+        .orb {
+            position: fixed;
+            width: 500px; height: 500px;
+            border-radius: 50%;
+            filter: blur(120px);
+            z-index: -1;
+            opacity: 0.15;
+        }
+        .orb-1 { background: #10b981; top: -10%; left: -10%; }
+        .orb-2 { background: #3b82f6; bottom: -10%; right: -10%; }
+
+        /* GLASS MORPHISM */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(30px) saturate(180%);
+            -webkit-backdrop-filter: blur(30px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 2.5rem;
+        }
+
+        .upload-area {
+            background: rgba(255, 255, 255, 0.02);
+            border: 2px dashed rgba(255, 255, 255, 0.1);
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        
+        .upload-area:hover {
+            border-color: #10b981;
+            background: rgba(16, 185, 129, 0.05);
+            transform: scale(1.01);
+        }
+
+        .matrix-btn {
+            background: #10b981;
+            box-shadow: 0 15px 30px rgba(16, 185, 129, 0.2);
+            transition: all 0.3s ease;
+        }
+        .matrix-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 20px 40px rgba(16, 185, 129, 0.4);
+        }
+    </style>
+</head>
+<body class="p-6">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+
+    <div class="max-w-md w-full relative z-10">
+        <div class="flex justify-between items-center mb-8">
+            <a href="{% url 'dashboard' %}" class="group inline-flex items-center text-slate-500 hover:text-white transition font-bold text-xs uppercase tracking-widest">
+                <i data-lucide="chevron-left" class="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform"></i>
+                Dashboard
+            </a>
+            <button onclick="resetForm()" id="reset-link" class="text-[10px] font-black uppercase tracking-tighter text-rose-500 hover:text-rose-400 hidden">
+                Discard Image
+            </button>
+        </div>
+
+        {% if messages %}
+            {% for message in messages %}
+                <div class="mb-6 p-4 rounded-2xl glass-card {% if message.tags == 'error' %}border-rose-500/30 text-rose-400 bg-rose-500/5{% else %}border-emerald-500/30 text-emerald-400 bg-emerald-500/5{% endif %} text-xs font-bold text-center tracking-wide">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <div class="glass-card p-10 relative overflow-hidden">
+            <div class="text-center mb-10">
+                <div class="w-16 h-16 bg-emerald-500/10 rounded-2xl flex items-center justify-center mx-auto mb-6 border border-emerald-500/20 shadow-[0_0_30px_rgba(16,185,129,0.2)]">
+                    <i data-lucide="scan-eye" class="w-8 h-8 text-emerald-400"></i>
+                </div>
+                <h1 class="text-3xl font-black tracking-tighter text-white">NEURAL <span class="text-emerald-500">SCAN</span></h1>
+                <p class="text-slate-500 text-[11px] font-bold uppercase tracking-[0.2em] mt-3">Fit Matrix AI Vision Engine</p>
+            </div>
+
+            <form id="food-form" method="POST" enctype="multipart/form-data" class="space-y-8">
+                {% csrf_token %}
+                
+                <div class="relative group">
+                    <label for="id_image" class="relative flex flex-col items-center justify-center w-full h-80 upload-area rounded-[2rem] cursor-pointer overflow-hidden">
+                        
+                        <img id="preview" class="absolute inset-0 w-full h-full object-cover hidden transition-opacity duration-500" src="" alt="Preview">
+                        
+                        <div id="upload-prompt" class="flex flex-col items-center justify-center p-8 text-center transition-all duration-300">
+                            <div class="w-14 h-14 bg-white/5 rounded-full flex items-center justify-center mb-5 group-hover:scale-110 group-hover:bg-emerald-500/20 transition-all">
+                                <i data-lucide="plus" class="w-6 h-6 text-emerald-400"></i>
+                            </div>
+                            <p class="text-sm text-white font-black uppercase tracking-widest">Identify Meal</p>
+                            <p class="text-[10px] text-slate-500 mt-2 font-bold uppercase">JPG, PNG or Live Capture</p>
+                        </div>
+
+                        <input type="file" name="image" id="id_image" class="hidden" accept="image/*" required onchange="handleImageChange(event)">
+                    </label>
+                </div>
+
+                <div class="pt-2">
+                    <button type="submit" id="submit-btn" class="w-full matrix-btn text-white font-black py-5 rounded-2xl transition-all flex items-center justify-center gap-3 uppercase text-xs tracking-[0.2em]">
+                        <span>Begin Analysis</span>
+                        <i data-lucide="zap" class="w-4 h-4 fill-current"></i>
+                    </button>
+                </div>
+            </form>
+
+            <div class="mt-10 pt-8 border-t border-white/5">
+                <div class="flex items-start gap-4 bg-white/5 p-5 rounded-2xl border border-white/5">
+                    <div class="text-emerald-500 mt-1">
+                        <i data-lucide="info" class="w-4 h-4"></i>
+                    </div>
+                    <p class="text-[10px] leading-relaxed text-slate-400 font-bold uppercase tracking-tight">
+                        <span class="text-emerald-500 italic">Optimization Tip:</span> For peak neural accuracy, ensure the plate is centered with minimal background noise.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+
+        function handleImageChange(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                const preview = document.getElementById('preview');
+                const prompt = document.getElementById('upload-prompt');
+                const resetBtn = document.getElementById('reset-link');
+                
+                reader.onload = function(e) {
+                    preview.src = e.target.result;
+                    preview.classList.remove('hidden');
+                    prompt.classList.add('opacity-0'); 
+                    resetBtn.classList.remove('hidden');
+                }
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function resetForm() {
+            const form = document.getElementById('food-form');
+            const preview = document.getElementById('preview');
+            const prompt = document.getElementById('upload-prompt');
+            const resetBtn = document.getElementById('reset-link');
+            
+            form.reset();
+            preview.src = "";
+            preview.classList.add('hidden');
+            prompt.classList.remove('opacity-0');
+            resetBtn.classList.add('hidden');
+        }
+
+        document.getElementById('food-form').onsubmit = function() {
+            const btn = document.getElementById('submit-btn');
+            btn.innerHTML = `
+                <svg class="animate-spin h-4 w-4 text-white" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span class="tracking-[0.2em]">Processing Neural Data...</span>
+            `;
+            btn.classList.replace('matrix-btn', 'bg-white/10');
+            btn.classList.add('text-slate-500');
+            btn.disabled = true;
+        };
+    </script>
+</body>
+</html>

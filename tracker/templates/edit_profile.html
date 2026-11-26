@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fit_Matrix | Edit Profile</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
+    
+    <style>
+        body { 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            background: #050505; 
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* DYNAMIC BACKGROUND */
+        .orb {
+            position: fixed;
+            width: 600px; height: 600px;
+            border-radius: 50%;
+            filter: blur(120px);
+            z-index: -1;
+            opacity: 0.15;
+        }
+        .orb-1 { background: #10b981; top: -10%; left: -10%; }
+        .orb-2 { background: #3b82f6; bottom: -10%; right: -10%; }
+
+        /* GLASS MORPHISM */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(30px) saturate(180%);
+            -webkit-backdrop-filter: blur(30px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 3rem;
+        }
+
+        /* DJANGO FIELD OVERRIDES */
+        input, select, textarea {
+            width: 100% !important;
+            padding: 1rem 1rem 1rem 3.5rem !important;
+            border-radius: 1.25rem !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            outline: none !important;
+            transition: all 0.3s ease !important;
+            background-color: rgba(255, 255, 255, 0.02) !important;
+            color: white !important;
+            font-size: 0.875rem !important;
+        }
+
+        input:focus, select:focus {
+            border-color: #10b981 !important;
+            background-color: rgba(16, 185, 129, 0.05) !important;
+            box-shadow: 0 0 20px rgba(16, 185, 129, 0.1) !important;
+        }
+
+        /* Select arrow fix for dark mode */
+        select {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2310b981'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E") !important;
+            background-repeat: no-repeat !important;
+            background-position: right 1rem center !important;
+            background-size: 1.2em !important;
+        }
+    </style>
+</head>
+
+<body class="p-6">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+
+    <div class="max-w-2xl w-full relative z-10">
+        <a href="{% url 'dashboard' %}" class="inline-flex items-center gap-2 text-slate-500 hover:text-emerald-400 transition mb-8 group uppercase text-[10px] font-black tracking-[0.2em]">
+            <i data-lucide="arrow-left" class="w-4 h-4 transition-transform group-hover:-translate-x-1"></i>
+            Return to Dashboard
+        </a>
+
+        <div class="glass-card overflow-hidden">
+            <div class="bg-white/5 border-b border-white/5 px-8 py-10">
+                <div class="flex items-center gap-6">
+                    <div class="w-16 h-16 bg-emerald-500/10 rounded-2xl flex items-center justify-center border border-emerald-500/20 shadow-[0_0_30px_rgba(16,185,129,0.1)]">
+                        <i data-lucide="user-cog" class="w-8 h-8 text-emerald-500"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-3xl font-black tracking-tighter uppercase">Sync <span class="text-emerald-500">Metrics</span></h2>
+                        <p class="text-slate-500 text-[10px] font-bold uppercase tracking-widest mt-1">Calibrate your biological profile</p>
+                    </div>
+                </div>
+            </div>
+
+            <form method="POST" class="p-8 md:p-10 space-y-8">
+                {% csrf_token %}
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    {% for field in form %}
+                    <div class="flex flex-col gap-2">
+                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
+                            {{ field.label }}
+                        </label>
+                        
+                        <div class="relative group">
+                            <div class="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none text-slate-600 group-focus-within:text-emerald-500 transition-colors">
+                                {% if 'weight' in field.label|lower %}<i data-lucide="weight" class="w-5 h-5"></i>
+                                {% elif 'height' in field.label|lower %}<i data-lucide="ruler" class="w-5 h-5"></i>
+                                {% elif 'age' in field.label|lower %}<i data-lucide="calendar" class="w-5 h-5"></i>
+                                {% elif 'goal' in field.label|lower %}<i data-lucide="target" class="w-5 h-5"></i>
+                                {% else %}<i data-lucide="fingerprint" class="w-5 h-5"></i>
+                                {% endif %}
+                            </div>
+                            
+                            {{ field }}
+                        </div>
+
+                        {% if field.help_text %}
+                        <p class="text-[10px] text-slate-600 font-bold uppercase tracking-tighter ml-1">{{ field.help_text }}</p>
+                        {% endif %}
+                        
+                        {% for error in field.errors %}
+                        <p class="text-[10px] text-rose-500 font-black uppercase tracking-tighter ml-1">Error: {{ error }}</p>
+                        {% endfor %}
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <div class="pt-8 border-t border-white/5 flex flex-col sm:flex-row items-center justify-end gap-6">
+                    <a href="{% url 'dashboard' %}" class="text-[10px] font-black text-slate-500 hover:text-white uppercase tracking-widest transition">
+                        Abort Changes
+                    </a>
+                    <button type="submit"
+                        class="w-full sm:w-auto bg-emerald-500 hover:bg-emerald-600 text-white px-10 py-5 rounded-2xl font-black text-xs uppercase tracking-widest transition shadow-[0_15px_30px_rgba(16,185,129,0.2)] flex items-center justify-center gap-3">
+                        <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                        Update Protocol
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <p class="text-center mt-8 text-slate-600 text-[10px] font-black uppercase tracking-[0.4em]">
+            Neural Encryption Active &bull; 2026
+        </p>
+    </div>
+
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>
