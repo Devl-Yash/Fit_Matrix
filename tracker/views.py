@@ -157,7 +157,7 @@ def add_food(request):
                 raise ValueError("EXTERNAL_API_KEY is not set.")
 
             genai.configure(api_key=api_key)
-            model = genai.GenerativeModel('gemini-2.5-flash')
+            model = genai.GenerativeModel('gemini-3.8-flash')
             img = Image.open(image_file)
             img.thumbnail((800, 800))
             if img.mode not in ("RGB", "L"):
@@ -228,7 +228,7 @@ def diet_plan(request):
         if api_key:
             genai.configure(api_key=api_key)
         # Updated to Gemini 3 Flash
-        model = genai.GenerativeModel('gemini-3-flash-preview')
+        model = genai.GenerativeModel('gemini-3.8-flash-preview')
         prompt = f"Create a daily diet plan for BMI: {bmi:.1f}, BMR: {bmr:.0f}, Goal: {target}. Format: BREAKFAST, LUNCH, DINNER with emojis."
         response = model.generate_content(prompt)
         ai_diet = response.text
