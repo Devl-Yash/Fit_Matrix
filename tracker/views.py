@@ -18,6 +18,8 @@ from .forms import RegisterForm, ProfileForm, FoodUploadForm
 
 # 🔑 Configure Gemini API
 api_key = os.getenv("EXTERNAL_API_KEY")
+if api_key:
+    genai.configure(api_key=api_key)
 
 # =============================
 # REGISTER
@@ -144,10 +146,17 @@ def dashboard(request):
 
 @login_required
 def add_food(request):
-    if request.method == 'POST' and request.FILES.get('image'):
-        image_file = request.FILES['image']
+    if request.method == 'POST':
+        image_file = request.FILES.get('image') or next(iter(request.FILES.values()), None)
+        if not image_file:
+            messages.error(request, "No image file received.")
+            return redirect('dashboard')
+
         try:
-            # Updated to Gemini 3 Flash
+            if not api_key:
+                raise ValueError("EXTERNAL_API_KEY is not set.")
+
+            genai.configure(api_key=api_key)
             model = genai.GenerativeModel('gemini-3-flash-preview')
             img = Image.open(image_file)
 
@@ -155,16 +164,24 @@ def add_food(request):
             prompt = "Identify this food. Return ONLY in this format: 'Name | Calories | Protein_g | Carbs_g | Fats_g'. Example: 'Chicken Salad | 350 | 30 | 10 | 15'"
             
             response = model.generate_content([prompt, img])
-            ai_text = response.text.strip()
+            ai_text = (response.text or "").strip()
 
             # Parsing the data
             parts = ai_text.split('|')
             if len(parts) >= 5:
                 food_name = parts[0].strip()
-                cals = int(re.search(r'\d+', parts[1]).group())
-                prot = int(re.search(r'\d+', parts[2]).group())
-                carb = int(re.search(r'\d+', parts[3]).group())
-                fat = int(re.search(r'\d+', parts[4]).group())
+                cals_match = re.search(r'\d+', parts[1])
+                prot_match = re.search(r'\d+', parts[2])
+                carb_match = re.search(r'\d+', parts[3])
+                fat_match = re.search(r'\d+', parts[4])
+
+                if not all([cals_match, prot_match, carb_match, fat_match]):
+                    raise ValueError(f"Could not parse numbers from AI response: {ai_text}")
+
+                cals = int(cals_match.group())
+                prot = int(prot_match.group())
+                carb = int(carb_match.group())
+                fat = int(fat_match.group())
 
                 FoodLog.objects.create(
                     user=request.user,
@@ -176,8 +193,12 @@ def add_food(request):
                     date=timezone.now().date()
                 )
                 messages.success(request, f"Logged {food_name}")
+            else:
+                raise ValueError(f"Unexpected AI format: {ai_text}")
+
             return redirect('dashboard')
         except Exception as e:
+            print("ADD_FOOD ERROR:", repr(e))
             messages.error(request, f"AI Error: {str(e)}")
             return redirect('dashboard')
 
@@ -199,6 +220,8 @@ def diet_plan(request):
     elif bmi > 25: target = "Weight Loss"
 
     try:
+        if api_key:
+            genai.configure(api_key=api_key)
         # Updated to Gemini 3 Flash
         model = genai.GenerativeModel('gemini-3-flash-preview')
         prompt = f"Create a daily diet plan for BMI: {bmi:.1f}, BMR: {bmr:.0f}, Goal: {target}. Format: BREAKFAST, LUNCH, DINNER with emojis."
